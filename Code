@@ -1,0 +1,53 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+
+spark = SparkSession.builder.appName("App_Name").getOrCreate()
+
+rawDF = spark.read.option("Header",True).option("inferSchema",True).csv('/FileStore/tables/book_ratings.csv')
+
+rawDF.printSchema()
+
+rawDF.show()
+
+rawDF.count()
+
+movieByuserDF = rawDF.groupBy("userId").count()
+
+movieByuserDF.show()
+
+movieBymovieDF = rawDF.groupBy("movieId").count()
+
+movieBymovieDF.count()
+
+movieByuserDF.orderBy("count",ascending=False).show(5)
+
+display(movieByuserDF.orderBy("count",ascending=False))
+
+avgRatingDF = rawDF.filter("movieId=429 or movieId=431").groupBy("movieId").avg("rating").withColumnRenamed("avg(rating)","avgByRating")
+
+avgRatingDF.withColumn("fixAvgRating",round(col('avgByRating'),2)).show()
+
+avgRatingDF.withColumn("fixAvgRating",round(col('avgByRating'),2)).show()
+
+from pyspark.ml.recommendation import ALS
+als = ALS(userCol="userId",itemCol="movieId",ratingCol="rating",coldStartStrategy="drop",nonnegative=True)
+
+rawDF.count()
+
+trainDF.count()
+
+testDF.count()
+
+trainDF,testDF = rawDF.randomSplit([0.6,0.4])
+
+model = als.fit(trainDF)
+
+predictDF = model.transform(testDF)
+
+from pyspark.ml.evaluation import RegressionEvaluator
+regeva = RegressionEvaluator(metricName="rmse",labelCol="rating",predictionCol="prediction")
+
+rmseCal = regeva.evaluate(predictDF)
+
+print(rmseCal)
+
